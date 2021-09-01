@@ -1,2 +1,2 @@
 # trackingDataAnalysis
-Python code for augmenting tracking files produced by Ilastik, with fluorescence data from microscopy images.
+Python code for modifying csv files outputted by the Ilastik tracking workflow. 
