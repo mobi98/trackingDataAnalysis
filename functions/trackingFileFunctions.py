@@ -1,7 +1,4 @@
-# path = "vsFpvB_gm_RepBio1_RepT2_tl_CSV-Table2.csv"
-# df = pd.read_csv(path)
-
-# for every frame, count the number of cells that are WT and mutant
+'''The functions listed below take csv files from Ilastik AFTER modification with GFP, RFP and Pvd intensity modifications'''
 def count_strains(df):
     
     """
