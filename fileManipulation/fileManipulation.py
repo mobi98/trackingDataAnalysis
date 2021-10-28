@@ -62,83 +62,85 @@ def get_folder_list(cwd, re_tag):
 
 vid_folders = get_folder_list(os.getcwd(), 'Fpv|WT')
 
-for folder in vid_folders:
-    
-    for file in tracking_files:
-        m = re.compile(r'^(%s)'%folder)
-        if m.search(file): # finding the tracking CSV for the current folder 
-            csv_path = 'tracking_results/'+file
-            break
-        else:
-            continue
-    tracking_data = pd.read_csv(csv_path, delimiter = ',') # opening the csv
-    tracking_data['pvd_intensity'] = 0 # creating new pvd_intensity column
-    pvd_folder_contents = os.listdir(folder + '/Pvd_corrected_2') # 
-    
-    for i in range(0,30):
-        row_idxs = tracking_data.index[tracking_data['frame'] == i]
-        for img in pvd_folder_contents:
-            if re.search(r'T=(%s)\b'%i, img):
-                pvd_img_path = folder+'/Pvd_corrected_2/'+img
+def tracking_file_manip(vid_folders, tracking_files)
+
+    for folder in vid_folders:
+        
+        for file in tracking_files:
+            m = re.compile(r'^(%s)'%folder)
+            if m.search(file): # finding the tracking CSV for the current folder 
+                csv_path = 'tracking_results/'+file
                 break
             else:
                 continue
-                
-        imagePvd = imread(pvd_img_path)
-        h, w = imagePvd.shape[0], imagePvd.shape[1]
+        tracking_data = pd.read_csv(csv_path, delimiter = ',') # opening the csv
+        tracking_data['pvd_intensity'] = 0 # creating new pvd_intensity column
+        pvd_folder_contents = os.listdir(folder + '/Pvd_corrected_2') # 
         
-        for idx in row_idxs:
-            center = tuple(tracking_data.loc[idx, ['Center_of_the_object_0', 'Center_of_the_object_1']])
-            mask = create_circular_mask(h,w,center = center, radius = 5)
-            pvd_intensity = sum(imagePvd[mask])
-            tracking_data.loc[idx, 'pvd_intensity'] = pvd_intensity
-        
-    if folder.startswith('vs'): # if folder contains competition assay
-
-        tracking_data['cell_type'] = ''
-        row_idxs2 = tracking_data.index[tracking_data['frame'] == 0]
-        co_ch = {'wt':[], 'mnt':[]}
-
-        gpf_folder = folder+"/GFP/"
-        gfp_folder_contents = os.listdir(gpf_folder)
-        for gfp in gfp_folder_contents:
-            if re.search(r'T=0\b', gfp):
-                gfp_img_path = folder+'/GFP/'+gfp
-                break
-
-        rfp_folder = folder+'/RFP/'
-        rfp_folder_contents = os.listdir(rfp_folder)
-        for rfp in rfp_folder_contents:
-            if re.search(r'T=0\b', rfp):
-                rfp_img_path = folder+'/RFP/'+rfp
-                break
-
-        imageGfp = imread(gfp_img_path)
-        imageRfp = imread(rfp_img_path)
-
-        for idx2 in row_idxs2:
-            lineageId  = tracking_data.loc[idx2, 'lineageId']
-            if lineageId != -1:
-
-                center = tuple(tracking_data.loc[idx2, ['Center_of_the_object_0', 'Center_of_the_object_1']])
-                mask = create_circular_mask(h,w,center = center, radius = 5)
-                gfp_intensity, rfp_intensity = sum(imageGfp[mask]), sum(imageRfp[mask])
-                if rfp_intensity > gfp_intensity:
-                    co_ch['mnt'].append(lineageId)
-                    tracking_data.loc[idx2,'cell_type'] = 'mnt'
-                if gfp_intensity > rfp_intensity:
-                    co_ch['wt'].append(lineageId)
-                    tracking_data.loc[idx2, 'cell_type'] = 'wt'
-
-        for n in range(row_idxs2[-1]+1, len(tracking_data)):
-
-            if tracking_data.loc[n, 'lineageId'] in co_ch['wt']:
-                tracking_data.loc[n, 'cell_type'] = 'wt'
-            elif tracking_data.loc[n, 'lineageId'] in co_ch['mnt']:
-                tracking_data.loc[n, 'cell_type'] = 'mnt'
-            else:
-                continue
-    
-                
-    tracking_data.to_csv(csv_path, index = False)
+        for i in range(0,30):
+            row_idxs = tracking_data.index[tracking_data['frame'] == i]
+            for img in pvd_folder_contents:
+                if re.search(r'T=(%s)\b'%i, img):
+                    pvd_img_path = folder+'/Pvd_corrected_2/'+img
+                    break
+                else:
+                    continue
+                    
+            imagePvd = imread(pvd_img_path)
+            h, w = imagePvd.shape[0], imagePvd.shape[1]
             
+            for idx in row_idxs:
+                center = tuple(tracking_data.loc[idx, ['Center_of_the_object_0', 'Center_of_the_object_1']])
+                mask = create_circular_mask(h,w,center = center, radius = 5)
+                pvd_intensity = sum(imagePvd[mask])
+                tracking_data.loc[idx, 'pvd_intensity'] = pvd_intensity
+            
+        if folder.startswith('vs'):
+
+            tracking_data['cell_type'] = ''
+            row_idxs2 = tracking_data.index[tracking_data['frame'] == 0]
+            co_ch = {'wt':[], 'mnt':[]}
+
+            gpf_folder = folder+"/GFP/"
+            gfp_folder_contents = os.listdir(gpf_folder)
+            for gfp in gfp_folder_contents:
+                if re.search(r'T=0\b', gfp):
+                    gfp_img_path = folder+'/GFP/'+gfp
+                    break
+
+            rfp_folder = folder+'/RFP/'
+            rfp_folder_contents = os.listdir(rfp_folder)
+            for rfp in rfp_folder_contents:
+                if re.search(r'T=0\b', rfp):
+                    rfp_img_path = folder+'/RFP/'+rfp
+                    break
+
+            imageGfp = imread(gfp_img_path)
+            imageRfp = imread(rfp_img_path)
+
+            for idx2 in row_idxs2:
+                lineageId  = tracking_data.loc[idx2, 'lineageId']
+                if lineageId != -1:
+
+                    center = tuple(tracking_data.loc[idx2, ['Center_of_the_object_0', 'Center_of_the_object_1']])
+                    mask = create_circular_mask(h,w,center = center, radius = 5)
+                    gfp_intensity, rfp_intensity = sum(imageGfp[mask]), sum(imageRfp[mask])
+                    if rfp_intensity > gfp_intensity:
+                        co_ch['mnt'].append(lineageId)
+                        tracking_data.loc[idx2,'cell_type'] = 'mnt'
+                    if gfp_intensity > rfp_intensity:
+                        co_ch['wt'].append(lineageId)
+                        tracking_data.loc[idx2, 'cell_type'] = 'wt'
+
+            for n in range(row_idxs2[-1]+1, len(tracking_data)):
+
+                if tracking_data.loc[n, 'lineageId'] in co_ch['wt']:
+                    tracking_data.loc[n, 'cell_type'] = 'wt'
+                elif tracking_data.loc[n, 'lineageId'] in co_ch['mnt']:
+                    tracking_data.loc[n, 'cell_type'] = 'mnt'
+                else:
+                    continue
+        
+                    
+        tracking_data.to_csv(csv_path, index = False)
+
