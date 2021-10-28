@@ -1,10 +1,11 @@
-'''The functions listed below take csv files from Ilastik AFTER modification with GFP, RFP and Pvd intensity modifications'''
+'''The functions listed below take csv files from Ilastik AFTER modification with GFP, RFP and Pvd intensity modifications (see fileManipulation)'''
+
 def count_strains(df):
     
     """
     Parameters
     ----------
-    df: a dataframe of tracking results from Ilastik
+    df: a dataframe of tracking results from Ilastik, modified with wt and mutant annotations
        
     Returns
     -------
@@ -42,7 +43,7 @@ def cellCount(df):
     Returns
     -------
     
-    time: list of time stamps
+    time: list of time points
     
     cellCount: list of cell counts at each time point
     '''
@@ -90,9 +91,11 @@ def pvd_conc(df):
     -------
     
     time: list of time points
-    pvd_wt: average pvd intensity of WT bacteria per time point in time list
-    pvd_mnt: average pvd intensity of mutant bacteria per time point in time list
+    pvd_wt: average pvd intensity of WT bacteria per time point 
+    pvd_mnt: average pvd intensity of mutant bacteria per time point 
+    
     OR
+    
     time: list of time points
     pvd: average pvd intensity for each time point
 
@@ -144,8 +147,8 @@ def cellDivisionTime(df):
     Returns
     -------
     
-    division_times: a list of division times for every cell present 
-    totalCells: total number of cells across the entire
+    division_times: a list containing the division times for individual bacterium over time
+    totalCells: total number of cells at each frame
     
     """
     if 'cell_type' in df.columns:
@@ -160,8 +163,8 @@ def cellDivisionTime(df):
             start_frame = min(df[df['trackId'] == tid]['frame'])
             rowIdxs = list(df.index[df['parentTrackId'] == tid])
             if rowIdxs:
-                fod = df.iloc[rowIdxs[0],:]['frame']
-                tod = (fod - start_frame)*10
+                fod = df.iloc[rowIdxs[0],:]['frame'] # frame of division
+                tod = (fod - start_frame)*10 # time of division
                 division_timesMnt.append(tod)
                 
         for tid in trackIdsWt:
@@ -268,6 +271,21 @@ def cellDivisionTime_pvd(df):
     
     
 def errorRate(df):
+    
+    """
+    Calculates the number of -1 values (false detections in Ilastik) in the dataframe
+    
+    Parameters
+    ----------
+    
+    df: dataframe of Ilastik tracking data
+    
+    Returns
+    -------
+    
+    Total number of false detections as a percentage of the number of recorded rows
+    
+    """
     
     totalRows = len(df)
     totalErrors = 0
