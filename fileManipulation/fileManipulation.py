@@ -41,13 +41,13 @@ def get_folder_list(cwd, re_tag):
   Parameters
   ----------
   
-  cwd = current directory
-  re_tag = strings contained within all folder names
+  cwd: current directory
+  re_tag:  strings contained within all folder names
  
   Returns
   -------
   
-  vid_folders = list of all folders names that contain microscopy images of competition assays
+  vid_folders: list of all folders names that contain microscopy images of competition assays
   
   '''
     
@@ -62,44 +62,60 @@ def get_folder_list(cwd, re_tag):
 
 vid_folders = get_folder_list(os.getcwd(), 'Fpv|WT')
 
-def tracking_file_manip(vid_folders, tracking_files)
+def tracking_file_manip(vid_folders, tracking_files):
+  
+  '''Identifies mutant and wildtype bacteria in competition assays, annotating each bacterium recorded in the csv file with a mnt/wt tag. 
+  Measures pyoverdine intensity for each bacterium
+  
+  Parameters
+  ----------
+  
+  vid_folders: list of folder names as strings, that contain GFP, RFP and pyoverdine fluorescence images
+  tracking_files: list of csv file names containing tracking data for each compeition assay
+ 
+  Returns
+  -------
+  
+  Modifies the tracking files to contain mutant or wildtype tag, and the fluorescence intensity of pyoverdine produced by each bacterium.
+  
+  '''
 
     for folder in vid_folders:
         
         for file in tracking_files:
-            m = re.compile(r'^(%s)'%folder)
+            m = re.compile(r'^(%s)'%folder) # generate re expression to search for corresponding csv
             if m.search(file): # finding the tracking CSV for the current folder 
                 csv_path = 'tracking_results/'+file
                 break
             else:
                 continue
-        tracking_data = pd.read_csv(csv_path, delimiter = ',') # opening the csv
+        tracking_data = pd.read_csv(csv_path, delimiter = ',') # reading the csv
         tracking_data['pvd_intensity'] = 0 # creating new pvd_intensity column
         pvd_folder_contents = os.listdir(folder + '/Pvd_corrected_2') # 
         
-        for i in range(0,30):
-            row_idxs = tracking_data.index[tracking_data['frame'] == i]
+        for i in range(0,30): # for each frame in the timelapse of competition assay 
+            row_idxs = tracking_data.index[tracking_data['frame'] == i] 
             for img in pvd_folder_contents:
-                if re.search(r'T=(%s)\b'%i, img):
-                    pvd_img_path = folder+'/Pvd_corrected_2/'+img
+                if re.search(r'T=(%s)\b'%i, img): # identify the corresponding frame/time point (T = 0,1,2...30)
+                    pvd_img_path = folder+'/Pvd_corrected_2/'+img 
                     break
                 else:
                     continue
                     
-            imagePvd = imread(pvd_img_path)
+            imagePvd = imread(pvd_img_path) # open the pyoverdine image
             h, w = imagePvd.shape[0], imagePvd.shape[1]
             
             for idx in row_idxs:
-                center = tuple(tracking_data.loc[idx, ['Center_of_the_object_0', 'Center_of_the_object_1']])
+                center = tuple(tracking_data.loc[idx, ['Center_of_the_object_0', 'Center_of_the_object_1']]) # extract bacterial centre point from csv file
                 mask = create_circular_mask(h,w,center = center, radius = 5)
-                pvd_intensity = sum(imagePvd[mask])
+                pvd_intensity = sum(imagePvd[mask]) # record fluorescence intensity in cyan channel
                 tracking_data.loc[idx, 'pvd_intensity'] = pvd_intensity
             
-        if folder.startswith('vs'):
+        if folder.startswith('vs'): # if folder contains competition assays
 
             tracking_data['cell_type'] = ''
             row_idxs2 = tracking_data.index[tracking_data['frame'] == 0]
-            co_ch = {'wt':[], 'mnt':[]}
+            co_ch = {'wt':[], 'mnt':[]} # initialise dictionary of wt and mutant lineage ids
 
             gpf_folder = folder+"/GFP/"
             gfp_folder_contents = os.listdir(gpf_folder)
@@ -115,7 +131,7 @@ def tracking_file_manip(vid_folders, tracking_files)
                     rfp_img_path = folder+'/RFP/'+rfp
                     break
 
-            imageGfp = imread(gfp_img_path)
+            imageGfp = imread(gfp_img_path) # open RFP and GFP images
             imageRfp = imread(rfp_img_path)
 
             for idx2 in row_idxs2:
